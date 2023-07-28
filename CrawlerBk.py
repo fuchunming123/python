@@ -1,30 +1,26 @@
 # -*- coding: UTF-8 -*-
 import re
 import sys
-import traceback
-from bs4 import BeautifulSoup
 import pymysql
 
 # 获取数据源
 from IpProxyUtils import *
 
+
 class CrawlerBk:
-
-
-    #IP池管理器
+    # IP池管理器
     __ipProxyUtils = None
-    #数据库链接
+    # 数据库链接
     __myConnect = None
     # 使用cursor()方法获取操作游标
     __myCursor = None
-    #最大分页
-    __pageSize = 10
+    # 最大分页
+    __pageSize = 1
 
     def __init__(self):
         self.__ipProxyUtils = IpProxyUtils(None, False)
-        self.__myConnect = self.connectMysql()
-        self.__myCursor = self.__myConnect.cursor()
-
+        # self.__myConnect = self.connectMysql()
+        # self.__myCursor = self.__myConnect.cursor()
 
     def connectMysql(self):
         # 打开数据库连接
@@ -35,9 +31,6 @@ class CrawlerBk:
             print("获取数据链接失败")
             db.close()
         return db
-
-
-
 
     # 根据首页获取地区URL
     def openHtml(self, url):
@@ -52,11 +45,10 @@ class CrawlerBk:
             # 地区
             dq1 = dq.string
             url1 = dq.get('href')
-            #myThread(url + url1, dq1).start()
-            for i in range (1, 11):
-                list = self.openFy(url + url1.split('/')[2] + '/pg%d'%i + 'p1p2p3' , dq1)
-                self.insertData(list)
-
+            # myThread(url + url1, dq1).start()
+            for i in range(1, 11):
+                list = self.openFy(url + url1.split('/')[2] + '/pg%d' % i + 'p1p2p3', dq1)
+                # self.insertData(list)
 
     # 获取房源信息
     def openFy(self, url, dq):
@@ -69,22 +61,22 @@ class CrawlerBk:
             fyData.append(fyInfo.select(".title > a")[0].string.strip().replace(' ', ''))
             fyData.append(fyInfo.select(".title > a")[0].get("href"))
             houseInfo = fyInfo.select(".address > .houseInfo")[0].next_element.next_element.next
-            fyData.append(houseInfo.strip().replace('\n', '').replace(' ',''))
+            fyData.append(houseInfo.strip().replace('\n', '').replace(' ', ''))
             jgInfo = fyInfo.select(".address > .priceInfo")[0]
             # 单价
-            fyData.append(float(re.findall(r"\d+\.?\d*",jgInfo.select(".totalPrice > span")[0].string)[0]))
+            fyData.append(float(re.findall(r"\d+\.?\d*", jgInfo.select(".totalPrice > span")[0].string)[0]))
             # 总价
-            fyData.append(float(re.findall(r"\d+\.?\d*", jgInfo.select(".unitPrice > span")[0].string.strip().replace(' ', ''))[0]))
+            fyData.append(float(
+                re.findall(r"\d+\.?\d*", jgInfo.select(".unitPrice > span")[0].string.strip().replace(' ', ''))[0]))
             fyData.append(dq)
             fyListData.append(tuple(fyData))
         return fyListData
-
 
     def insertData(self, fyListData):
         try:
             # 使用execute方法执行SQL语句
             sql = "insert fyxx(mc,url,info,zj,dj,dq) values('%s','%s','%s','%.5f','%.5f','%s')"
-            #cursor.executemany(sql % fyListData)
+            # cursor.executemany(sql % fyListData)
             for fy in fyListData:
                 self.__myCursor.execute(sql % fy)
             self.__myConnect.commit()
